@@ -1,1 +1,3 @@
-"# mars-lander" 
+# mars-lander
+
+![Screenshot](img/screenshot.png)

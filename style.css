@@ -1,0 +1,21 @@
+body {
+  background-color: black;
+  padding: 0;
+  border: 0;
+  overflow: hidden; }
+
+canvas {
+  display: block;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  padding-left: 0;
+  padding-right: 0;
+  margin-left: auto;
+  margin-right: auto; }
+
+#wrapper {
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0;
+  margin: 0; }
