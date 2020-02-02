@@ -2,7 +2,7 @@
 /*
 MIT License
 
-Copyright (c) 2020 Fredy Rogez (rogez.net)
+Copyright (c) 2020 Fredy Rogez (https://rogez.games)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,9 +33,13 @@ const game = {
   maxVx: 3,
   maxVy: 3,
   gridSize: 16,
-  vxLandingMax: 0.5,
-  vyLandingMax: 1,
-  angleLandingMax: 6
+  vxLandingMax: 0.3,
+  vyLandingMax: 0.3,
+  angleLandingMax: 4,
+  score: 0,
+  state: "run",
+  game_over_timeout: 0,
+  game_win_timeout: 0
 };
 
 const sprites = {
@@ -103,9 +107,9 @@ class Lander {
     this.state = 'flying'; // 'landed', 'crashed'
     this.burstState = false;
 
-    this.vxLandingMax = 0.5;
-    this.vyLandingMax = 1;
-    this.angleLandingMax = 6;
+    this.vxLandingMax = game.vxLandingMax; 
+    this.vyLandingMax = game.vyLandingMax;
+    this.angleLandingMax = game.angleLandingMax;
   }
 
   rotate(dir) {
@@ -217,8 +221,8 @@ class Lander {
           this.x,
           this.y,
           this.spriteWidth,
-          this.spriteHeight
-        );
+          this.spriteHeight          
+        );        
         break;
 
       case 'crashed':
@@ -315,8 +319,6 @@ class Ground {
     this.path[0][2] = Math.round(Math.random() * 200 + 220);
 
     const landingPadCellSize = this.landindPadSize / game.gridSize;
-    //console.log(landingPadCellSize);
-    //const landingPadCellX = Math.round(Math.random() * (groundNbPoints - (this.landindPadSize*2 - 2)))  + this.landindPadSize;
     const landingPadCellX = Math.round(
       Math.random() * (groundNbPoints - landingPadCellSize - 4) +
       landingPadCellSize / 2
@@ -427,7 +429,7 @@ class ShootingStar {
 
   render() {
     const ctx = game.ctx;
-    ctx.fillStyle = "#88888855";
+    ctx.fillStyle = "#888888ff";
     ctx.fillRect(this.x, this.y, 3, 3);
   }
 }
@@ -551,15 +553,67 @@ class Hud {
     ctx.fillText(`ALTITUDE :`, 700, 24 + 20 + 20 + 20);
     ctx.fillText(`${this.altitude}`, 900 - altTxtWidth, 24 + 20 + 20 + 20);
 
+    ctx.font = "30px sans-serif";
+    ctx.fillText(`SCORE : ${game.score}`, 400, 34);    
+
     this.refresh++;
 
     ctx.fillStyle = "#00ff00";
     ctx.strokeStyle = "rgb(255, 255, 255)";
     ctx.lineWidth = 3;
-
     ctx.strokeRect(0, 0, game.width, game.height);
-
     ctx.strokeStyle = "#ff0000";
+
+
+    if (game.state === "game over") {
+      game.game_over_timeout++;
+      if (game.game_over_timeout<60*3) {
+        ctx.fillStyle = "#dddddd77";
+        ctx.strokeStyle = "#dddddd";
+        ctx.fillRect(200, game.height/2-50, game.width-400, 100);
+        ctx.strokeRect(200, game.height/2-50, game.width-400, 100);
+        ctx.font = "40px sans-serif";
+        ctx.fillStyle = "#ffffff";
+
+        let goWidth = ctx.measureText("CRASH !").width;
+        let xgo = (game.width/2)-(goWidth/2);
+
+        ctx.fillText("CRASH !", xgo, game.height/2-10);    
+
+        let scoreWidth = ctx.measureText(`SCORE : ${game.score}`).width;
+        let xsco = (game.width/2)-(scoreWidth/2);
+        ctx.fillText(`SCORE : ${game.score}`, xsco, game.height/2+40);    
+      } else {
+        game.game_over_timeout = 0;
+        game.state = "next game";  
+        nextGame(0);      
+      }
+    }
+
+    if (game.state === "game win") {
+      if (game.game_win_timeout == 0) {
+        game.score++;
+      }
+      game.game_win_timeout++;
+      if (game.game_win_timeout<60*2) {
+        ctx.fillStyle = "#dddddd77";
+        ctx.strokeStyle = "#dddddd";
+        ctx.fillRect(200, game.height/2-50, game.width-400, 100);
+        ctx.strokeRect(200, game.height/2-50, game.width-400, 100);
+        ctx.font = "40px sans-serif";
+        ctx.fillStyle = "#ffffff";
+
+        let goWidth = ctx.measureText("PERFECT LANDING !").width;
+        let xgo = (game.width/2)-(goWidth/2);
+
+        ctx.fillText("PERFECT LANDING !", xgo, game.height/2+10);    
+
+      } else {
+        game.game_win_timeout = 0;
+        game.state = "next game";  
+        nextGame(game.score);      
+      }      
+    }
   }
 }
 
@@ -592,6 +646,7 @@ function gameUpdate() {
         myLander.enginePower = 0;
         myLander.y = myGround.landindPad.y - 22;
         myLander.state = "landed";
+
       }
       else {
         myLander.state = 'crashed';
@@ -600,6 +655,14 @@ function gameUpdate() {
     else {
       myLander.state = 'crashed';
     }
+  }
+
+  if (myLander.state === 'crashed') {
+    game.state = 'game over';
+  }
+
+  if (myLander.state === 'landed') {
+    game.state = 'game win';    
   }
 
   marsBackground.update();
@@ -682,12 +745,25 @@ game.ctx = game.canvas.getContext("2d");
 game.dt = game.limitFPS;
 game.oldTimestamp = performance.now();
 
-const marsBackground = new BackGround();
-const myGround = new Ground({ landindPadSize: 64 });
+let marsBackground = new BackGround();
+let myGround = new Ground({ landindPadSize: 64 });
 const myHud = new Hud();
 const myLander = new Lander(32, 32, game.ctx);
 myLander.vx = 2.5;
 myLander.angle = -20;
+
+function nextGame(score) {  
+  myLander.x = 32;
+  myLander.y = 32;
+  myLander.vx = 2.5;
+  myLander.angle = -20;
+  myLander.state = "flying";
+  myLander.burstState = false;
+  marsBackground = new BackGround();
+  myGround = new Ground({ landindPadSize: 64 });
+  game.score = score;
+  
+}
 
 //// gameLoop
 function gameLoop() {
