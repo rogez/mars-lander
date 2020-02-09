@@ -575,10 +575,10 @@ class Hud {
         ctx.font = "40px sans-serif";
         ctx.fillStyle = "#ffffff";
 
-        let goWidth = ctx.measureText("CRASH !").width;
+        let goWidth = ctx.measureText("CRASHED !").width;
         let xgo = (game.width/2)-(goWidth/2);
 
-        ctx.fillText("CRASH !", xgo, game.height/2-10);    
+        ctx.fillText("CRASHED !", xgo, game.height/2-10);    
 
         let scoreWidth = ctx.measureText(`SCORE : ${game.score}`).width;
         let xsco = (game.width/2)-(scoreWidth/2);
@@ -657,6 +657,10 @@ function gameUpdate() {
     }
   }
 
+  if ((myLander.x > game.width - myLander.spriteWidth) || (myLander.x < 0)) {
+    myLander.state = 'crashed';    
+  }
+
   if (myLander.state === 'crashed') {
     game.state = 'game over';
   }
@@ -673,8 +677,8 @@ function gameUpdate() {
 function gameRender() {
   marsBackground.render();
   myGround.render();
-  myLander.render();
   myHud.render();
+  myLander.render();  
   if (game.debug)
     debugRender();
 }
